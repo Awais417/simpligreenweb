@@ -62,6 +62,9 @@ export const TASK_STATUS_TONE: Record<TaskStatus, BadgeTone> = {
   rejected: 'red',
 };
 
+// The web portal is admin/QA only — managers and installers use the mobile app.
+export const WEB_ALLOWED_ROLES: readonly string[] = ['admin', 'qa'];
+
 export const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
   manager: 'Manager',

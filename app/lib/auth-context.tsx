@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from './api';
 import type { User } from './types';
+import { WEB_ALLOWED_ROLES } from './utils';
 
 interface AuthContextValue {
   user: User | null;
@@ -27,7 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem('user');
       if (storedToken && storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsed: User = JSON.parse(storedUser);
+          if (WEB_ALLOWED_ROLES.includes(parsed.role)) {
+            setUser(parsed);
+          } else {
+            // Stale session from a role that's no longer permitted on the web portal.
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
         } catch {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -45,6 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const { token, user: loggedInUser } = await api.auth.login(email, password);
+      if (!WEB_ALLOWED_ROLES.includes(loggedInUser.role)) {
+        throw new Error('Manager and installer accounts can only sign in through the SimpliGreen mobile app.');
+      }
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(loggedInUser));
       setUser(loggedInUser);
